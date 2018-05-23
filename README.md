@@ -1,6 +1,7 @@
 # iOSPrinciple_RxSwift
 Principle RxSwift
 
+
 > RxSwif 是 ReactiveX (http://reactivex.io/) 的 Swift 版本，也就是一个函数式响应编程的框架。
 
 ## 观察者模式
@@ -35,11 +36,10 @@ Never就是创建一个sequence，但是不发出任何事件信号。
 
 ```swift
 let disposeBag = DisposeBag()
-let neverSequence = Observable.never()
- 
-let neverSequenceSubscription = neverSequence.subscribe { _ in
-		print("This will never be printed")
-}.addDisposableTo(disposeBag)
+let neverSequence = Observable<Any>.never()
+neverSequence.subscribe { _ in
+print("This will never be printed")
+}.disposed(by: disposeBag)
 ```
 
 什么都不打印…
@@ -51,9 +51,10 @@ empty就是创建一个空的sequence,只能发出一个completed事件
 
 ```swift
 let disposeBag = DisposeBag()
-Observable.empty().subscribe { event in
-		print(event)
-}.addDisposableTo(disposeBag)
+let neverSequence = Observable<Any>.empty()
+neverSequence.subscribe { event in
+print(event)
+}.disposed(by: disposeBag)
 ```
 
 打印结果：
@@ -69,8 +70,8 @@ just是创建一个sequence只能发出一种特定的事件，能正常结束
 let disposeBag = DisposeBag()
 Observable.just("")
 .subscribe { event in
-		print(event)
-}.addDisposableTo(disposeBag)
+print(event)
+}.disposed(by: disposeBag)
 ```
 
 ![](http://og1yl0w9z.bkt.clouddn.com/18-5-22/64996910.jpg)
@@ -87,9 +88,10 @@ Of是创建一个sequence能发出很多种事件信号
 
 ```swift
 let disposeBag = DisposeBag()
-Observable.of("", "", "", "").subscribe(onNext: { element in
-		print(element)
-}).addDisposableTo(disposeBag)
+Observable.of("", "", "", "")
+.subscribe(onNext: { element in
+print(element)
+}).disposed(by: disposeBag)
 ```
 
 如果把上面的onNext:去掉的话，结果会是这样子，也正好对应了我们subscribe中，subscribe只监听事件。
@@ -109,8 +111,9 @@ from就是从集合中创建sequence，例如数组，字典或者Set
 ```swift
 let disposeBag = DisposeBag()
 Observable.from(["", "", "", ""])
-.subscribe(onNext: { print($0) })
-.addDisposableTo(disposeBag)
+.subscribe(onNext: {
+print($0)
+}).disposed(by: disposeBag)
 ```
 
 ### create
@@ -122,16 +125,16 @@ create操作符传入一个观察者observer，然后调用observer的onNext，o
 
 ```swift
 let disposeBag = DisposeBag()
-let myJust = { (element: String) -> Observable in
-		return Observable.create { observer in
-			observer.on(.next(element))
-			observer.on(.completed)
-			return Disposables.create()
-		}
+let myJust = { (element: String) -> Observable<Any> in
+return Observable.create { observer in
+observer.on(.next(element))
+observer.on(.completed)
+return Disposables.create()
 }
-myJust("").subscribe { 
-		print($0) 
-}.addDisposableTo(disposeBag)
+}
+myJust("").subscribe {
+print($0)
+}.disposed(by: disposeBag)
 ```
 
 打印结果：
@@ -148,8 +151,9 @@ range就是创建一个sequence，他会发出这个范围中的从开始到结�
 
 ```swift
 let disposeBag = DisposeBag()
-Observable.range(start: 1, count: 10).subscribe { print($0) }
-.addDisposableTo(disposeBag)
+Observable.range(start: 1, count: 10).subscribe {
+print($0)
+}.disposed(by: disposeBag)
 ```
 
 打印结果：
@@ -175,21 +179,22 @@ completed
 
 ```swift
 let disposeBag = DisposeBag()
-Observable.repeatElement("").take(3).subscribe(onNext: { 
-print($0) 
-}).addDisposableTo(disposeBag)
+Observable.repeatElement("").take(3).subscribe(onNext: {
+print($0)
+}).disposed(by: disposeBag)
 ```
 
 ### generate
 generate是创建一个可观察sequence，当初始化的条件为true的时候，他就会发出所对应的事件
 
 ```swift
+let disposeBag = DisposeBag()
 Observable<Int>
-    .generate(initialState: 1, condition: { $0 < 10 }, iterate: { $0 + 1 })
-    .subscribe(onNext: { int in
-        print("element:", int)
-    })
-    .disposed(by: bag)
+.generate(initialState: 1, condition: { $0 < 10 }, iterate: { $0 + 1 })
+.subscribe(onNext: { int in
+print("element:", int)
+})
+.disposed(by: disposeBag)
 ```
 
 打印结果：
@@ -216,30 +221,25 @@ deferred会为每一为订阅者observer创建一个新的可观察序列
 
 ```swift
 let disposeBag = DisposeBag()
-var count = 1
-let deferredSequence = Observable.deferred {
-		print("Creating \(count)")
-		count += 1
-		return Observable.create { observer in
-		print("Emitting...")
-		observer.onNext("")
-		observer.onNext("")
-		observer.onNext("")
-		return Disposables.create()
-		}
+let ob = Observable<Int>.deferred { () -> Observable<Int> in
+let ob1 = Observable<Int>.create({ ov in
+ov.onNext(1)
+ov.onNext(2)
+ov.onCompleted()
+return Disposables.create()
+})
+return ob1
 }
-deferredSequence.subscribe(onNext: { print($0) }).addDisposableTo(disposeBag)
-deferredSequence.subscribe(onNext: { print($0) }).addDisposableTo(disposeBag)
+ob.subscribe(onNext: { int in
+print(int)
+}).disposed(by: disposeBag)
 ```
 
 运行结果：
 
 ```
-Creating 1
-Emitting...
-
-Creating 2
-Emitting...
+1
+2
 ```
 
 ### error
@@ -247,15 +247,21 @@ Emitting...
 
 ```
 let disposeBag = DisposeBag()
-Observable.error(TestError.test).subscribe { 
-		print($0) 
-}.addDisposableTo(disposeBag)
+Observable<Int>.error(RxError.error)
+.subscribe(onNext:{ element in
+print("error: ", element)
+}, onError: { error in
+print("error: ", error)
+}, onCompleted: {
+print("error completed")
+})
+.disposed(by: disposeBag)
 ```
 
 运行结果：
 
 ```
-error(test)
+error: error
 ```
 
 ### doOn
@@ -265,15 +271,15 @@ doOn我感觉就是在直接onNext处理时候，先执行某个方法，doOnNex
 ```
 let disposeBag = DisposeBag()
 Observable.of("", "", "", "").do(onNext: { 
-		print("Intercepted:", $0) 
+print("Intercepted:", $0) 
 }, onError: { 
-		print("Intercepted error:", $0) 
+print("Intercepted error:", $0) 
 }, onCompleted: { 
-		print("Completed")  
+print("Completed")  
 }).subscribe(onNext: { 
-		print($0) 
+print($0) 
 },onCompleted: { 
-		print("结束") 
+print("结束") 
 }).addDisposableTo(disposeBag)
 ```
 
@@ -281,9 +287,13 @@ Observable.of("", "", "", "").do(onNext: {
 
 ```
 Intercepted: 
+
 Intercepted: 
+
 Intercepted: 
+
 Intercepted: 
+
 Completed
 结束
 ```
