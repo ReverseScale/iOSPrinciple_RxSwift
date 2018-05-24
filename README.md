@@ -298,8 +298,194 @@ Completed
 结束
 ```
 
+
 ## 学会使用Subjects
 Subjet是observable和Observer之间的桥梁，一个Subject既是一个Obserable也是一个Observer，他既可以发出事件，也可以监听事件。
+
+### PublishSubject
+
+当你订阅PublishSubject的时候，你只能接收到订阅他之后发生的事件。subject.onNext()发出onNext事件，对应的还有onError()和onCompleted()事件
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-24/1994155.jpg)
+
+```swift
+let disposeBag = DisposeBag()
+let subject = PublishSubject<String>()
+
+subject.onNext("111")
+
+subject.subscribe(onNext: { string in
+print("第1次订阅：", string)
+}, onCompleted:{
+print("第1次订阅：onCompleted")
+}).disposed(by: disposeBag)
+
+subject.onNext("222")
+
+subject.subscribe(onNext: { string in
+print("第2次订阅：", string)
+}, onCompleted:{
+print("第2次订阅：onCompleted")
+}).disposed(by: disposeBag)
+
+subject.onNext("333")
+
+subject.onCompleted()
+
+subject.onNext("444")
+
+subject.subscribe(onNext: { string in
+print("第3次订阅：", string)
+}, onCompleted:{
+print("第3次订阅：onCompleted")
+}).disposed(by: disposeBag)
+```
+
+运行结果
+
+```
+第1次订阅： 222
+第1次订阅： 333
+第2次订阅： 333
+第1次订阅：onCompleted
+第2次订阅：onCompleted
+第3次订阅：onCompleted
+```
+
+### BehaviorSubject
+
+当你订阅了BehaviorSubject，你会接受到订阅之前的最后一个事件。
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-24/59627163.jpg)
+
+```swift
+let disposeBag = DisposeBag()
+
+//创建一个BehaviorSubject
+let subject = BehaviorSubject(value: "111")
+
+//第1次订阅subject
+subject.subscribe { event in
+print("第1次订阅：", event)
+}.disposed(by: disposeBag)
+
+//发送next事件
+subject.onNext("222")
+
+//发送error事件
+subject.onError(NSError(domain: "local", code: 0, userInfo: nil))
+
+//第2次订阅subject
+subject.subscribe { event in
+print("第2次订阅：", event)
+}.disposed(by: disposeBag)
+```
+
+运行结果
+
+```
+第1次订阅： next(111)
+第1次订阅： next(222)
+第1次订阅： error(Error Domain=local Code=0 "(null)")
+第2次订阅： error(Error Domain=local Code=0 "(null)")
+```
+
+### ReplaySubject
+
+当你订阅ReplaySubject的时候，你可以接收到订阅他之后的事件，但也可以接受订阅他之前发出的事件，接受几个事件取决与bufferSize的大小
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-24/30464912.jpg)
+
+```swift
+let disposeBag = DisposeBag()
+
+//创建一个bufferSize为2的ReplaySubject
+let subject = ReplaySubject<String>.create(bufferSize: 2)
+
+//连续发送3个next事件
+subject.onNext("111")
+subject.onNext("222")
+subject.onNext("333")
+
+//第1次订阅subject
+subject.subscribe { event in
+print("第1次订阅：", event)
+}.disposed(by: disposeBag)
+
+//再发送1个next事件
+subject.onNext("444")
+
+//第2次订阅subject
+subject.subscribe { event in
+print("第2次订阅：", event)
+}.disposed(by: disposeBag)
+
+//让subject结束
+subject.onCompleted()
+
+//第3次订阅subject
+subject.subscribe { event in
+print("第3次订阅：", event)
+}.disposed(by: disposeBag)
+```
+
+运行结果
+
+```
+第1次订阅： next(222)
+第1次订阅： next(333)
+第1次订阅： next(444)
+第2次订阅： next(333)
+第2次订阅： next(444)
+第1次订阅： completed
+第2次订阅： completed
+第3次订阅： next(333)
+第3次订阅： next(444)
+第3次订阅： completed
+```
+
+### Variable
+
+Variable是BehaviorSubject一个包装箱，就像是一个箱子一样，使用的时候需要调用asObservable()拆箱，里面的value是一个BehaviorSubject，他不会发出error事件，但是会自动发出completed事件。
+
+```swift
+let disposeBag = DisposeBag()
+
+//创建一个初始值为111的Variable
+let variable = Variable("111")
+
+//修改value值
+variable.value = "222"
+
+//第1次订阅
+variable.asObservable().subscribe {
+print("第1次订阅：", $0)
+}.disposed(by: disposeBag)
+
+//修改value值
+variable.value = "333"
+
+//第2次订阅
+variable.asObservable().subscribe {
+print("第2次订阅：", $0)
+}.disposed(by: disposeBag)
+
+//修改value值
+variable.value = "444"
+```
+
+运行结果
+
+```
+第1次订阅： next(222)
+第1次订阅： next(333)
+第2次订阅： next(333)
+第1次订阅： next(444)
+第2次订阅： next(444)
+第1次订阅： completed
+第2次订阅： completed
+```
+
 
 未完，码不动了..
 
