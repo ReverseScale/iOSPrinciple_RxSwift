@@ -25,7 +25,11 @@ class ViewController: UIViewController {
 //        generateTest()
 //        deferredTest()
 //        errorTest()
-        doOnTest()
+//        doOnTest()
+//        publishSubjectTest()
+//        behaviorSubjectTest()
+//        replaySubjectTest()
+        variableTest()
     }
     
 //    创建一个sequence，不能发出任何事件信号
@@ -165,6 +169,118 @@ class ViewController: UIViewController {
         },onCompleted: {
             print("结束")
         }).disposed(by: disposeBag)
+    }
+    
+//    订阅PublishSubject，你只能接收到订阅他之后发生的事件
+    func publishSubjectTest() {
+        let disposeBag = DisposeBag()
+        let subject = PublishSubject<String>()
+        
+        subject.onNext("111")
+        
+        subject.subscribe(onNext: { string in
+            print("第1次订阅：", string)
+        }, onCompleted:{
+            print("第1次订阅：onCompleted")
+        }).disposed(by: disposeBag)
+        
+        subject.onNext("222")
+        
+        subject.subscribe(onNext: { string in
+            print("第2次订阅：", string)
+        }, onCompleted:{
+            print("第2次订阅：onCompleted")
+        }).disposed(by: disposeBag)
+        
+        subject.onNext("333")
+        
+        subject.onCompleted()
+        
+        subject.onNext("444")
+        
+        subject.subscribe(onNext: { string in
+            print("第3次订阅：", string)
+        }, onCompleted:{
+            print("第3次订阅：onCompleted")
+        }).disposed(by: disposeBag)
+    }
+    
+//    订阅BehaviorSubject，你会接受到订阅之前的最后一个事件
+    func behaviorSubjectTest() {
+        let disposeBag = DisposeBag()
+        
+        let subject = BehaviorSubject(value: "111")
+        
+        subject.subscribe { event in
+            print("第1次订阅：", event)
+            }.disposed(by: disposeBag)
+        
+        subject.onNext("222")
+        
+        subject.onError(NSError(domain: "local", code: 0, userInfo: nil))
+        
+        subject.subscribe { event in
+            print("第2次订阅：", event)
+            }.disposed(by: disposeBag)
+    }
+    
+    func replaySubjectTest() {
+        let disposeBag = DisposeBag()
+        
+        //创建一个bufferSize为2的ReplaySubject
+        let subject = ReplaySubject<String>.create(bufferSize: 2)
+        
+        //连续发送3个next事件
+        subject.onNext("111")
+        subject.onNext("222")
+        subject.onNext("333")
+        
+        //第1次订阅subject
+        subject.subscribe { event in
+            print("第1次订阅：", event)
+            }.disposed(by: disposeBag)
+        
+        //再发送1个next事件
+        subject.onNext("444")
+        
+        //第2次订阅subject
+        subject.subscribe { event in
+            print("第2次订阅：", event)
+            }.disposed(by: disposeBag)
+        
+        //让subject结束
+        subject.onCompleted()
+        
+        //第3次订阅subject
+        subject.subscribe { event in
+            print("第3次订阅：", event)
+            }.disposed(by: disposeBag)
+    }
+    
+    func variableTest() {
+        let disposeBag = DisposeBag()
+        
+        //创建一个初始值为111的Variable
+        let variable = Variable("111")
+        
+        //修改value值
+        variable.value = "222"
+        
+        //第1次订阅
+        variable.asObservable().subscribe {
+            print("第1次订阅：", $0)
+            }.disposed(by: disposeBag)
+        
+        //修改value值
+        variable.value = "333"
+        
+        //第2次订阅
+        variable.asObservable().subscribe {
+            print("第2次订阅：", $0)
+            }.disposed(by: disposeBag)
+        
+        //修改value值
+        variable.value = "444"
     }
     
     override func didReceiveMemoryWarning() {
