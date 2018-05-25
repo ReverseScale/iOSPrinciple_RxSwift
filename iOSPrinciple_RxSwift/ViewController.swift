@@ -29,7 +29,12 @@ class ViewController: UIViewController {
 //        publishSubjectTest()
 //        behaviorSubjectTest()
 //        replaySubjectTest()
-        variableTest()
+//        variableTest()
+//        startWithTest()
+//        mergeTest()
+//        zipTest()
+//        combineLatestTest()
+        switchLatestTest()
     }
     
 //    创建一个sequence，不能发出任何事件信号
@@ -281,6 +286,107 @@ class ViewController: UIViewController {
         
         //修改value值
         variable.value = "444"
+    }
+    
+//    在发出事件消息之前，先发出某个特定的事件消息
+    func startWithTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of("2", "3")
+            .startWith("1")
+            .subscribe(onNext: { print($0) })
+            .disposed(by:disposeBag)
+    }
+    
+//    合并两个Observable流合成单个Observable流
+    func mergeTest(){
+        let disposeBag = DisposeBag()
+        
+        let subject1 = PublishSubject<Any>()
+        let subject2 = PublishSubject<Any>()
+        
+        Observable.of(subject1, subject2)
+            .merge()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        subject1.onNext("️")
+        subject1.onNext("️")
+        subject2.onNext("①")
+        subject2.onNext("②")
+        subject1.onNext("")
+        subject2.onNext("③")
+    }
+    
+//    绑定超过最多不超过8个的Observable流，结合在一起处理
+    func zipTest() {
+        let disposeBag = DisposeBag()
+        let stringSubject = PublishSubject<Any>()
+        let intSubject = PublishSubject<Any>()
+//        将stringSubject和intSubject压缩到一起共同处理
+        Observable.zip(stringSubject, intSubject) { stringElement, intElement in
+            "\(stringElement) \(intElement)"
+            }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        stringSubject.onNext("️")
+        stringSubject.onNext("️")
+        
+        intSubject.onNext(1)
+        intSubject.onNext(2)
+        
+        stringSubject.onNext("")
+        intSubject.onNext(3)
+    }
+    
+//    绑定超过最多不超过8个的Observable流，结合在一起处理
+    func combineLatestTest() {
+        let disposeBag = DisposeBag()
+        
+        let stringSubject = PublishSubject<Any>()
+        let intSubject = PublishSubject<Any>()
+        
+        Observable.combineLatest(stringSubject, intSubject) { stringElement, intElement in
+            "\(stringElement) \(intElement)"
+            }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        stringSubject.onNext("️")
+        
+        stringSubject.onNext("️")
+        intSubject.onNext(1)
+        
+        intSubject.onNext(2)
+        
+        stringSubject.onNext("")
+    }
+    
+//    switchLatest可以对事件流进行转换
+    func switchLatestTest() {
+        let disposeBag = DisposeBag()
+        let subject1 = BehaviorSubject(value: "⚽️")
+        let subject2 = BehaviorSubject(value: "")
+
+        let variable = Variable(subject1)
+        
+        variable.asObservable()
+            .switchLatest()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        subject1.onNext("")
+        subject1.onNext("")
+        
+        variable.value = subject2
+        
+        subject1.onNext("⚾️")
+        
+        subject2.onNext("")
+        variable.value = subject1
+        subject2.onNext("Mary")
+        subject1.onNext("Bobo")
     }
     
     override func didReceiveMemoryWarning() {

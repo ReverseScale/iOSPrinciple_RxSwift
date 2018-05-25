@@ -298,7 +298,6 @@ Completed
 结束
 ```
 
-
 ## 学会使用Subjects
 Subjet是observable和Observer之间的桥梁，一个Subject既是一个Obserable也是一个Observer，他既可以发出事件，也可以监听事件。
 
@@ -484,6 +483,182 @@ variable.value = "444"
 第2次订阅： next(444)
 第1次订阅： completed
 第2次订阅： completed
+```
+
+## 联合操作
+
+联合操作就是把多个Observable流合成单个Observable流
+
+### startWith
+
+在发出事件消息之前，先发出某个特定的事件消息。比如发出事件2 ，3然后我startWith(1)，那么就会先发出1，然后2 ，3.
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-25/51762248.jpg)
+
+```objc
+let disposeBag = DisposeBag()
+
+Observable.of("2", "3")
+.startWith("1")
+.subscribe(onNext: { print($0) })
+.disposed(by:disposeBag)
+```
+
+运行结果
+
+```
+1
+2
+3
+```
+
+### merge
+
+合并两个Observable流合成单个Observable流，根据时间轴发出对应的事件
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-25/97082590.jpg)
+
+```objc
+let disposeBag = DisposeBag()
+
+let subject1 = PublishSubject<Any>()
+let subject2 = PublishSubject<Any>()
+
+Observable.of(subject1, subject2)
+.merge()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject1.onNext("️")
+subject1.onNext("️")
+subject2.onNext("①")
+subject2.onNext("②")
+subject1.onNext("")
+subject2.onNext("③")
+```
+
+运行结果
+
+```
+️
+️
+①
+②
+
+③
+```
+
+### zip
+
+绑定超过最多不超过8个的Observable流，结合在一起处理。注意Zip是一个事件对应另一个流一个事件。
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-25/24394638.jpg)
+
+```objc
+let disposeBag = DisposeBag()
+let stringSubject = PublishSubject<Any>()
+let intSubject = PublishSubject<Any>()
+Observable.zip(stringSubject, intSubject) { stringElement, intElement in
+"\(stringElement) \(intElement)"
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+stringSubject.onNext("️")
+stringSubject.onNext("️")
+
+intSubject.onNext(1)
+intSubject.onNext(2)
+
+stringSubject.onNext("")
+intSubject.onNext(3)
+```
+
+运行结果
+
+```
+️ 1
+️ 2
+3
+```
+
+### combineLatest
+
+绑定超过最多不超过8个的Observable流，结合在一起处理。和Zip不同的是combineLatest是一个流的事件对应另一个流的最新的事件，两个事件都会是最新的事件，可将下图与Zip的图进行对比。
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-25/16951991.jpg)
+
+```objc
+let disposeBag = DisposeBag()
+
+let stringSubject = PublishSubject<Any>()
+let intSubject = PublishSubject<Any>()
+
+Observable.combineLatest(stringSubject, intSubject) { stringElement, intElement in
+"\(stringElement) \(intElement)"
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+stringSubject.onNext("️")
+
+stringSubject.onNext("️")
+intSubject.onNext(1)
+
+intSubject.onNext(2)
+
+stringSubject.onNext("")
+```
+
+运行结果
+
+```
+️ 1
+️ 2
+2
+```
+
+### switchLatest
+
+switchLatest可以对事件流进行转换，本来监听的subject1，我可以通过更改variable里面的value更换事件源。变成监听subject2了
+
+![](http://og1yl0w9z.bkt.clouddn.com/18-5-25/65497413.jpg)
+
+```objc
+let disposeBag = DisposeBag()
+let subject1 = BehaviorSubject(value: "⚽️")
+let subject2 = BehaviorSubject(value: "")
+
+let variable = Variable(subject1)
+
+variable.asObservable()
+.switchLatest()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject1.onNext("")
+subject1.onNext("")
+
+variable.value = subject2
+
+subject1.onNext("⚾️")
+
+subject2.onNext("")
+variable.value = subject1
+subject2.onNext("Mary")
+subject1.onNext("Bobo")
+```
+
+运行结果
+
+```
+⚽️
+
+
+
+
+⚾️
+Bobo
 ```
 
 
