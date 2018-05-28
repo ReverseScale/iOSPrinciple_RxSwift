@@ -34,7 +34,11 @@ class ViewController: UIViewController {
 //        mergeTest()
 //        zipTest()
 //        combineLatestTest()
-        switchLatestTest()
+//        switchLatestTest()
+//        mapTest()
+//        flatMapTest()
+//        flatMapLatestTest()
+        scanTest()
     }
     
 //    创建一个sequence，不能发出任何事件信号
@@ -388,6 +392,68 @@ class ViewController: UIViewController {
         subject2.onNext("Mary")
         subject1.onNext("Bobo")
     }
+    
+//    通过传入一个函数闭包把原来的sequence转变为一个新的sequence的操作
+    func mapTest() {
+        let disposeBag = DisposeBag()
+        Observable.of(1, 2, 3)
+            .map { $0 * $0 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    flatMap有一次拆包动作
+    func flatMapTest() {
+        let disposeBag = DisposeBag()
+        
+        let subject1 = BehaviorSubject(value: "A")
+        let subject2 = BehaviorSubject(value: "1")
+        
+        let variable = Variable(subject1)
+        
+        variable.asObservable()
+            .flatMap { $0 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        subject1.onNext("B")
+        variable.value = subject2
+        subject2.onNext("2")
+        subject1.onNext("C")
+    }
+    
+//    flatMapLatest 与 flatMap 的唯一区别是：flatMapLatest 只会接收最新的 value 事件
+    func flatMapLatestTest() {
+        let disposeBag = DisposeBag()
+        
+        let subject1 = BehaviorSubject(value: "A")
+        let subject2 = BehaviorSubject(value: "1")
+        
+        let variable = Variable(subject1)
+        
+        variable.asObservable()
+            .flatMapLatest { $0 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        subject1.onNext("B")
+        variable.value = subject2
+        subject2.onNext("2")
+        subject1.onNext("C")
+    }
+    
+//    scan就是给一个初始化的数，然后不断的拿前一个结果和最新的值进行处理操作。
+    func scanTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 4, 5)
+            .scan(0) { acum, elem in
+                acum + elem
+            }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
