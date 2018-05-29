@@ -497,11 +497,11 @@ variable.value = "444"
 
 ```objc
 let disposeBag = DisposeBag()
-        
-        Observable.of("2", "3")
-            .startWith("1")
-            .subscribe(onNext: { print($0) })
-            .disposed(by:disposeBag)
+
+Observable.of("2", "3")
+.startWith("1")
+.subscribe(onNext: { print($0) })
+.disposed(by:disposeBag)
 ```
 
 运行结果
@@ -520,21 +520,21 @@ let disposeBag = DisposeBag()
 
 ```objc
 let disposeBag = DisposeBag()
-        
-        let subject1 = PublishSubject<Any>()
-        let subject2 = PublishSubject<Any>()
-        
-        Observable.of(subject1, subject2)
-            .merge()
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
-        
-        subject1.onNext("️")
-        subject1.onNext("️")
-        subject2.onNext("①")
-        subject2.onNext("②")
-        subject1.onNext("")
-        subject2.onNext("③")
+
+let subject1 = PublishSubject<Any>()
+let subject2 = PublishSubject<Any>()
+
+Observable.of(subject1, subject2)
+.merge()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject1.onNext("️")
+subject1.onNext("️")
+subject2.onNext("①")
+subject2.onNext("②")
+subject1.onNext("")
+subject2.onNext("③")
 ```
 
 运行结果
@@ -556,22 +556,22 @@ let disposeBag = DisposeBag()
 
 ```objc
 let disposeBag = DisposeBag()
-        let stringSubject = PublishSubject<Any>()
-        let intSubject = PublishSubject<Any>()
-        Observable.zip(stringSubject, intSubject) { stringElement, intElement in
-            "\(stringElement) \(intElement)"
-            }
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
-        
-        stringSubject.onNext("️")
-        stringSubject.onNext("️")
-        
-        intSubject.onNext(1)
-        intSubject.onNext(2)
-        
-        stringSubject.onNext("")
-        intSubject.onNext(3)
+let stringSubject = PublishSubject<Any>()
+let intSubject = PublishSubject<Any>()
+Observable.zip(stringSubject, intSubject) { stringElement, intElement in
+"\(stringElement) \(intElement)"
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+stringSubject.onNext("️")
+stringSubject.onNext("️")
+
+intSubject.onNext(1)
+intSubject.onNext(2)
+
+stringSubject.onNext("")
+intSubject.onNext(3)
 ```
 
 运行结果
@@ -590,24 +590,24 @@ let disposeBag = DisposeBag()
 
 ```objc
 let disposeBag = DisposeBag()
-        
-        let stringSubject = PublishSubject<Any>()
-        let intSubject = PublishSubject<Any>()
-        
-        Observable.combineLatest(stringSubject, intSubject) { stringElement, intElement in
-            "\(stringElement) \(intElement)"
-            }
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
-        
-        stringSubject.onNext("️")
-        
-        stringSubject.onNext("️")
-        intSubject.onNext(1)
-        
-        intSubject.onNext(2)
-        
-        stringSubject.onNext("")
+
+let stringSubject = PublishSubject<Any>()
+let intSubject = PublishSubject<Any>()
+
+Observable.combineLatest(stringSubject, intSubject) { stringElement, intElement in
+"\(stringElement) \(intElement)"
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+stringSubject.onNext("️")
+
+stringSubject.onNext("️")
+intSubject.onNext(1)
+
+intSubject.onNext(2)
+
+stringSubject.onNext("")
 ```
 
 运行结果
@@ -626,27 +626,27 @@ switchLatest可以对事件流进行转换，本来监听的subject1，我可以
 
 ```objc
 let disposeBag = DisposeBag()
-        let subject1 = BehaviorSubject(value: "⚽️")
-        let subject2 = BehaviorSubject(value: "")
+let subject1 = BehaviorSubject(value: "⚽️")
+let subject2 = BehaviorSubject(value: "")
 
-        let variable = Variable(subject1)
-        
-        variable.asObservable()
-            .switchLatest()
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
-        
-        subject1.onNext("")
-        subject1.onNext("")
-        
-        variable.value = subject2
-        
-        subject1.onNext("⚾️")
-        
-        subject2.onNext("")
-        variable.value = subject1
-        subject2.onNext("Mary")
-        subject1.onNext("Bobo")
+let variable = Variable(subject1)
+
+variable.asObservable()
+.switchLatest()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject1.onNext("")
+subject1.onNext("")
+
+variable.value = subject2
+
+subject1.onNext("⚾️")
+
+subject2.onNext("")
+variable.value = subject1
+subject2.onNext("Mary")
+subject1.onNext("Bobo")
 ```
 
 运行结果
@@ -669,10 +669,10 @@ Bobo
 
 ```swift
 let disposeBag = DisposeBag()
-        Observable.of(1, 2, 3)
-            .map { $0 * $0 }
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
+Observable.of(1, 2, 3)
+.map { $0 * $0 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
 ```
 
 运行结果
@@ -691,21 +691,21 @@ let disposeBag = DisposeBag()
 
 ```swift
 let disposeBag = DisposeBag()
-        
-        let subject1 = BehaviorSubject(value: "A")
-        let subject2 = BehaviorSubject(value: "1")
-        
-        let variable = Variable(subject1)
-        
-        variable.asObservable()
-            .flatMap { $0 }
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
-        
-        subject1.onNext("B")
-        variable.value = subject2
-        subject2.onNext("2")
-        subject1.onNext("C")
+
+let subject1 = BehaviorSubject(value: "A")
+let subject2 = BehaviorSubject(value: "1")
+
+let variable = Variable(subject1)
+
+variable.asObservable()
+.flatMap { $0 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject1.onNext("B")
+variable.value = subject2
+subject2.onNext("2")
+subject1.onNext("C")
 ```
 
 运行结果
@@ -724,17 +724,17 @@ flatMapLatest 与 flatMap 的唯一区别是：flatMapLatest 只会接收最新�
 
 ```swift
 let disposeBag = DisposeBag()
- 
+
 let subject1 = BehaviorSubject(value: "A")
 let subject2 = BehaviorSubject(value: "1")
- 
+
 let variable = Variable(subject1)
- 
+
 variable.asObservable()
-    .flatMapLatest { $0 }
-    .subscribe(onNext: { print($0) })
-    .disposed(by: disposeBag)
- 
+.flatMapLatest { $0 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
 subject1.onNext("B")
 variable.value = subject2
 subject2.onNext("2")
@@ -757,13 +757,13 @@ scan就是给一个初始化的数，然后不断的拿前一个结果和最新�
 
 ```swift
 let disposeBag = DisposeBag()
-        
-        Observable.of(1, 2, 3, 4, 5)
-            .scan(0) { acum, elem in
-                acum + elem
-            }
-            .subscribe(onNext: { print($0) })
-            .disposed(by: disposeBag)
+
+Observable.of(1, 2, 3, 4, 5)
+.scan(0) { acum, elem in
+acum + elem
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
 ```
 
 运行结果
@@ -776,7 +776,289 @@ let disposeBag = DisposeBag()
 15
 ```
 
+## 过滤和约束
 
-未完，码不动了..
+### filter
+
+filter很好理解，就是过滤掉某些不符合要求的事件
+
+```swift
+let disposeBag = DisposeBag()
+Observable.of(
+"", "", "",
+"", "", "",
+"", "", "")
+.filter {
+$0 == ""
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+30
+22
+60
+40
+```
+
+### distinctUntilChanged
+
+distinctUntilChanged就是当下一个事件与前一个事件是不同事件的事件才进行处理操作
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of("", "", "", "", "", "", "")
+.distinctUntilChanged()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+1
+2
+3
+1
+4
+```
+
+### elementAt
+
+只处理在指定位置的事件
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of("", "", "", "", "", "", "")
+.distinctUntilChanged()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+3
+```
+
+### single
+
+找出在sequence只发出一次的事件，如果超过一个就会发出error错误
+* 限制只发送一次事件，或者满足条件的第一个事件。
+* 如果存在有多个事件或者没有事件都会发出一个 error 事件。
+* 如果只有一个事件，则不会发出 error 事件。
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(1, 2, 3, 4)
+.single{ $0 == 2 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+Observable.of("A", "B", "C", "D")
+.single()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+2
+A
+Unhandled error happened: Sequence contains more than one element.
+subscription called from:
+```
+
+
+### take
+
+只处理前几个事件信号
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(1, 2, 3, 4)
+.take(2)
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+1
+2
+```
+
+### takeLast
+
+只处理后几个事件信号
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(1, 2, 3, 4)
+.takeLast(1)
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+4
+```
+
+### takeWhile
+
+当条件满足的时候进行处理
+
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(2, 3, 4, 5, 6)
+.takeWhile { $0 < 4 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+2
+3
+```
+
+### takeUntil
+
+接收事件消息，直到另一个sequence发出事件消息的时候
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(2, 3, 4, 5, 6)
+.takeWhile { $0 < 4 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+2
+3
+```
+
+### takeUntil
+
+接收事件消息，直到另一个sequence发出事件消息的时候
+
+```swift
+let disposeBag = DisposeBag()
+
+let source = PublishSubject<String>()
+let notifier = PublishSubject<String>()
+
+source
+.takeUntil(notifier)
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+source.onNext("a")
+source.onNext("b")
+source.onNext("c")
+source.onNext("d")
+
+//停止接收消息
+notifier.onNext("z")
+
+source.onNext("e")
+source.onNext("f")
+source.onNext("g")
+```
+
+打印结果
+
+```
+a
+b
+c
+d
+```
+
+### skipWhile
+
+取消前几个事件
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(2, 3, 4, 5, 6)
+.skipWhile { $0 < 4 }
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+4
+5
+6
+```
+
+### skipUntil
+
+直到某个sequence发出了事件消息，才开始接收当前sequence发出的事件消息
+
+```swift
+let disposeBag = DisposeBag()
+
+let source = PublishSubject<Int>()
+let notifier = PublishSubject<Int>()
+
+source
+.skipUntil(notifier)
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+source.onNext(1)
+source.onNext(2)
+source.onNext(3)
+source.onNext(4)
+source.onNext(5)
+
+//开始接收消息
+notifier.onNext(0)
+
+source.onNext(6)
+source.onNext(7)
+source.onNext(8)
+
+//仍然接收消息
+notifier.onNext(0)
+
+source.onNext(9)
+```
+
+打印结果
+
+```
+6
+7
+8
+9
+```
+
+
+未完，码不动了.
 
 

@@ -38,7 +38,17 @@ class ViewController: UIViewController {
 //        mapTest()
 //        flatMapTest()
 //        flatMapLatestTest()
-        scanTest()
+//        scanTest()
+//        filterTest()
+//        distinctUntilChangedTest()
+//        elementAtTest()
+//        singleTest()
+//        takeTest()
+//        takeLastTest()
+//        takeWhileTest()
+//        takeUntilTest()
+//        skipWhileTest()
+        skipUntilTest()
     }
     
 //    创建一个sequence，不能发出任何事件信号
@@ -454,9 +464,151 @@ class ViewController: UIViewController {
             .disposed(by: disposeBag)
     }
     
+//    filter很好理解，就是过滤掉某些不符合要求的事件
+    func filterTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(2, 30, 22, 5, 60, 3, 40 ,9)
+            .filter {
+                $0 > 10
+            }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    distinctUntilChanged就是当下一个事件与前一个事件是不同事件的事件才进行处理操作
+    func distinctUntilChangedTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 1, 1, 4)
+            .distinctUntilChanged()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    elementAt只处理在指定位置的事件
+    func elementAtTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 4)
+            .elementAt(2)
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    找出在sequence只发出一次的事件，如果超过一个就会发出error错误
+    func singleTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 4)
+            .single{ $0 == 2 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        Observable.of("A", "B", "C", "D")
+            .single()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    take只处理前几个事件信号
+    func takeTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 4)
+            .take(2)
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    takeLast只处理后几个事件信号
+    func takeLastTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(1, 2, 3, 4)
+            .takeLast(1)
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    takeWhile当条件满足的时候进行处理
+    func takeWhileTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(2, 3, 4, 5, 6)
+            .takeWhile { $0 < 4 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    takeUntil接收事件消息，直到另一个sequence发出事件消息的时候
+    func takeUntilTest() {
+        let disposeBag = DisposeBag()
+        
+        let source = PublishSubject<String>()
+        let notifier = PublishSubject<String>()
+        
+        source
+            .takeUntil(notifier)
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        source.onNext("a")
+        source.onNext("b")
+        source.onNext("c")
+        source.onNext("d")
+        
+        //停止接收消息
+        notifier.onNext("z")
+        
+        source.onNext("e")
+        source.onNext("f")
+        source.onNext("g")
+    }
+    
+//    skipWhile取消前几个事件
+    func skipWhileTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(2, 3, 4, 5, 6)
+            .skipWhile { $0 < 4 }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    直到某个sequence发出了事件消息，才开始接收当前sequence发出的事件消息
+    func skipUntilTest() {
+        let disposeBag = DisposeBag()
+        
+        let source = PublishSubject<Int>()
+        let notifier = PublishSubject<Int>()
+        
+        source
+            .skipUntil(notifier)
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        source.onNext(1)
+        source.onNext(2)
+        source.onNext(3)
+        source.onNext(4)
+        source.onNext(5)
+        
+        //开始接收消息
+        notifier.onNext(0)
+        
+        source.onNext(6)
+        source.onNext(7)
+        source.onNext(8)
+        
+        //仍然接收消息
+        notifier.onNext(0)
+        
+        source.onNext(9)
+    }
+
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
 }
-
