@@ -1058,7 +1058,353 @@ source.onNext(9)
 9
 ```
 
+## 数学操作
 
-未完，码不动了.
+### toArray
 
+将sequence转换成一个array，并转换成单一事件信号，然后结束
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.range(start: 1, count: 10)
+.toArray()
+.subscribe { print($0) }
+.disposed(by:disposeBag)
+```
+
+打印结果
+
+```
+next([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+completed
+```
+
+### reduce
+
+用一个初始值，对事件数据进行累计操作。reduce接受一个初始值，和一个操作符号
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of(10, 100, 1000)
+.reduce(1, accumulator: +)
+.subscribe(onNext: { print($0) })
+.disposed(by:disposeBag)
+```
+
+打印结果
+
+```
+1111
+```
+
+### concat
+
+concat会把多个sequence和并为一个sequence，并且当前面一个sequence发出了completed事件，才会开始下一个sequence的事件。
+
+```swift
+let disposeBag = DisposeBag()
+
+let subject1 = BehaviorSubject(value: 1)
+let subject2 = BehaviorSubject(value: 2)
+
+let variable = Variable(subject1)
+variable.asObservable()
+.concat()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+subject2.onNext(2)
+subject1.onNext(1)
+subject1.onNext(1)
+subject1.onCompleted()
+
+variable.value = subject2
+subject2.onNext(2)
+```
+
+打印结果
+
+```
+1
+1
+1
+2
+2
+```
+
+## 连接性操作
+
+Connectable Observable有订阅时不开始发射事件消息，而是仅当调用它们的connect（）方法时。这样就可以等待所有我们想要的订阅者都已经订阅了以后，再开始发出事件消息，这样能保证我们想要的所有订阅者都能接收到事件消息。其实也就是等大家都就位以后，开始发出消息。
+
+### publish
+
+将一个正常的sequence转换成一个connectable sequence
+
+```swift
+//每隔1秒钟发送1个事件
+let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+.publish()
+
+//第一个订阅者（立刻开始订阅）
+_ = interval
+.subscribe(onNext: { print("订阅1: \($0)") })
+
+//相当于把事件消息推迟了两秒
+delay(2) {
+_ = interval.connect()
+}
+
+//第二个订阅者（延迟5秒开始订阅）
+delay(5) {
+_ = interval
+.subscribe(onNext: { print("订阅2: \($0)") })
+}
+```
+
+打印结果
+
+```
+订阅1: 0
+订阅1: 1
+订阅1: 2
+订阅2: 2
+订阅1: 3
+订阅2: 3
+订阅1: 4
+订阅2: 4
+订阅1: 5
+订阅2: 5
+订阅1: 6
+订阅2: 6
+...
+```
+
+### replay
+
+将一个正常的sequence转换成一个connectable sequence，然后和replaySubject相似，能接收到订阅之前的事件消息。
+
+```swift
+//每隔1秒钟发送1个事件
+let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+.replay(5)
+
+//第一个订阅者（立刻开始订阅）
+_ = interval
+.subscribe(onNext: { print("订阅1: \($0)") })
+
+//相当于把事件消息推迟了两秒
+delay(2) {
+_ = interval.connect()
+}
+
+//第二个订阅者（延迟5秒开始订阅）
+delay(5) {
+_ = interval
+.subscribe(onNext: { print("订阅2: \($0)") })
+}
+```
+
+打印结果
+
+```
+订阅1: 0
+订阅1: 1
+订阅2: 0
+订阅2: 1
+订阅1: 2
+订阅2: 2
+订阅1: 3
+订阅2: 3
+...
+```
+
+### multicast
+
+将一个正常的sequence转换成一个connectable sequence，并且通过特性的subject发送出去，比如PublishSubject，或者replaySubject，behaviorSubject等。不同的Subject会有不同的结果。
+
+```swift
+//创建一个Subject（后面的multicast()方法中传入）
+let subject = PublishSubject<Int>()
+
+//这个Subject的订阅
+_ = subject
+.subscribe(onNext: { print("Subject: \($0)") })
+
+//每隔1秒钟发送1个事件
+let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+.multicast(subject)
+
+//第一个订阅者（立刻开始订阅）
+_ = interval
+.subscribe(onNext: { print("订阅1: \($0)") })
+
+//相当于把事件消息推迟了两秒
+delay(2) {
+_ = interval.connect()
+}
+
+//第二个订阅者（延迟5秒开始订阅）
+delay(5) {
+_ = interval
+.subscribe(onNext: { print("订阅2: \($0)") })
+}
+```
+
+打印结果
+
+```
+Subject: 0
+订阅1: 0
+Subject: 1
+订阅1: 1
+Subject: 2
+订阅1: 2
+订阅2: 2
+...
+```
+
+## 错误处理
+
+### catchErrorJustReturn
+
+遇到error事件的时候，就return一个值，然后结束
+
+```swift
+let disposeBag = DisposeBag()
+
+let sequenceThatFails = PublishSubject<String>()
+
+sequenceThatFails
+.catchErrorJustReturn("错误")
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+sequenceThatFails.onNext("a")
+sequenceThatFails.onNext("b")
+sequenceThatFails.onNext("c")
+sequenceThatFails.onError(MyError.A)
+sequenceThatFails.onNext("d")
+```
+
+打印结果
+
+```
+a
+b
+c
+错误
+```
+
+### catchError
+
+捕获error进行处理，可以返回另一个sequence进行订阅
+
+```swift
+let disposeBag = DisposeBag()
+
+let sequenceThatFails = PublishSubject<String>()
+let recoverySequence = Observable.of("1", "2", "3")
+
+sequenceThatFails
+.catchError {
+print("Error:", $0)
+return recoverySequence
+}
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+
+sequenceThatFails.onNext("a")
+sequenceThatFails.onNext("b")
+sequenceThatFails.onNext("c")
+sequenceThatFails.onError(MyError.A)
+sequenceThatFails.onNext("d")
+```
+
+打印结果
+
+```
+a
+b
+c
+Error: A
+1
+2
+3
+```
+
+### retry
+
+遇见error事件可以进行重试，比如网络请求失败，可以进行重新连接
+
+```swift
+let disposeBag = DisposeBag()
+var count = 1
+
+let sequenceThatErrors = Observable<String>.create { observer in
+observer.onNext("a")
+observer.onNext("b")
+
+//让第一个订阅时发生错误
+if count == 1 {
+observer.onError(MyError.A)
+print("Error encountered")
+count += 1
+}
+
+observer.onNext("c")
+observer.onNext("d")
+observer.onCompleted()
+
+return Disposables.create()
+}
+
+sequenceThatErrors
+.retry(2)  //重试2次（参数为空则只重试一次）
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+a
+b
+Error encountered
+a
+b
+c
+d
+```
+
+## debug
+
+### debug
+
+打印所有的订阅, 事件和disposals
+
+```swift
+let disposeBag = DisposeBag()
+
+Observable.of("2", "3")
+.startWith("1")
+.debug()
+.subscribe(onNext: { print($0) })
+.disposed(by: disposeBag)
+```
+
+打印结果
+
+```
+2018-05-30 10:19:32.129: ViewController.swift:810 (debugTest()) -> subscribed
+2018-05-30 10:19:32.201: ViewController.swift:810 (debugTest()) -> Event next(1)
+1
+2018-05-30 10:19:32.226: ViewController.swift:810 (debugTest()) -> Event next(2)
+2
+2018-05-30 10:19:32.226: ViewController.swift:810 (debugTest()) -> Event next(3)
+3
+2018-05-30 10:19:32.226: ViewController.swift:810 (debugTest()) -> Event completed
+2018-05-30 10:19:32.227: ViewController.swift:810 (debugTest()) -> isDisposed
+```
 

@@ -48,7 +48,17 @@ class ViewController: UIViewController {
 //        takeWhileTest()
 //        takeUntilTest()
 //        skipWhileTest()
-        skipUntilTest()
+//        skipUntilTest()
+//        toArrayTest()
+//        reduceTest()
+//        concatTest()
+//        publishTest()
+//        replayTest()
+//        multicastTest()
+//        catchErrorJustReturnTest()
+//        catchErrorTest()
+//        retryTest()
+        debugTest()
     }
     
 //    创建一个sequence，不能发出任何事件信号
@@ -607,6 +617,218 @@ class ViewController: UIViewController {
         source.onNext(9)
     }
 
+//    将sequence转换成一个array，并转换成单一事件信号，然后结束
+    func toArrayTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.range(start: 1, count: 10)
+            .toArray()
+            .subscribe { print($0) }
+            .disposed(by:disposeBag)
+    }
+    
+//    用一个初始值，对事件数据进行累计操作。reduce接受一个初始值，和一个操作符号
+    func reduceTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of(10, 100, 1000)
+            .reduce(1, accumulator: +)
+            .subscribe(onNext: { print($0) })
+            .disposed(by:disposeBag)
+    }
+    
+//    concat会把多个sequence和并为一个sequence，并且当前面一个sequence发出了completed事件，才会开始下一个sequence的事件。
+    func concatTest() {
+        let disposeBag = DisposeBag()
+        
+        let subject1 = BehaviorSubject(value: 1)
+        let subject2 = BehaviorSubject(value: 2)
+        
+        let variable = Variable(subject1)
+        variable.asObservable()
+            .concat()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        subject2.onNext(2)
+        subject1.onNext(1)
+        subject1.onNext(1)
+        subject1.onCompleted()
+        
+        variable.value = subject2
+        subject2.onNext(2)
+    }
+    
+    //    将一个正常的sequence转换成一个connectable sequence
+    func publishTest() {
+        //每隔1秒钟发送1个事件
+        let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+            .publish()
+        
+        //第一个订阅者（立刻开始订阅）
+        _ = interval
+            .subscribe(onNext: { print("订阅1: \($0)") })
+        
+        //相当于把事件消息推迟了两秒
+        delay(2) {
+            _ = interval.connect()
+        }
+        
+        //第二个订阅者（延迟5秒开始订阅）
+        delay(5) {
+            _ = interval
+                .subscribe(onNext: { print("订阅2: \($0)") })
+        }
+    }
+    
+//    将一个正常的sequence转换成一个connectable sequence，然后和replaySubject相似，能接收到订阅之前的事件消息。
+    func replayTest() {
+        //每隔1秒钟发送1个事件
+        let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+            .replay(5)
+        
+        //第一个订阅者（立刻开始订阅）
+        _ = interval
+            .subscribe(onNext: { print("订阅1: \($0)") })
+        
+        //相当于把事件消息推迟了两秒
+        delay(2) {
+            _ = interval.connect()
+        }
+        
+        //第二个订阅者（延迟5秒开始订阅）
+        delay(5) {
+            _ = interval
+                .subscribe(onNext: { print("订阅2: \($0)") })
+        }
+    }
+    
+//    将一个正常的sequence转换成一个connectable sequence，并且通过特性的subject发送出去，比如PublishSubject，或者replaySubject，behaviorSubject等。不同的Subject会有不同的结果。
+    func multicastTest() {
+        //创建一个Subject（后面的multicast()方法中传入）
+        let subject = PublishSubject<Int>()
+        
+        //这个Subject的订阅
+        _ = subject
+            .subscribe(onNext: { print("Subject: \($0)") })
+        
+        //每隔1秒钟发送1个事件
+        let interval = Observable<Int>.interval(1, scheduler: MainScheduler.instance)
+            .multicast(subject)
+        
+        //第一个订阅者（立刻开始订阅）
+        _ = interval
+            .subscribe(onNext: { print("订阅1: \($0)") })
+        
+        //相当于把事件消息推迟了两秒
+        delay(2) {
+            _ = interval.connect()
+        }
+        
+        //第二个订阅者（延迟5秒开始订阅）
+        delay(5) {
+            _ = interval
+                .subscribe(onNext: { print("订阅2: \($0)") })
+        }
+    }
+    
+//    遇到error事件的时候，就return一个值，然后结束
+    func catchErrorJustReturnTest() {
+        let disposeBag = DisposeBag()
+        
+        let sequenceThatFails = PublishSubject<String>()
+        
+        sequenceThatFails
+            .catchErrorJustReturn("错误")
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        sequenceThatFails.onNext("a")
+        sequenceThatFails.onNext("b")
+        sequenceThatFails.onNext("c")
+        sequenceThatFails.onError(MyError.A)
+        sequenceThatFails.onNext("d")
+    }
+    
+//    捕获error进行处理，可以返回另一个sequence进行订阅
+    func catchErrorTest() {
+        let disposeBag = DisposeBag()
+        
+        let sequenceThatFails = PublishSubject<String>()
+        let recoverySequence = Observable.of("1", "2", "3")
+        
+        sequenceThatFails
+            .catchError {
+                print("Error:", $0)
+                return recoverySequence
+            }
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+        
+        sequenceThatFails.onNext("a")
+        sequenceThatFails.onNext("b")
+        sequenceThatFails.onNext("c")
+        sequenceThatFails.onError(MyError.A)
+        sequenceThatFails.onNext("d")
+    }
+    
+//    遇见error事件可以进行重试，比如网络请求失败，可以进行重新连接
+    func retryTest() {
+        let disposeBag = DisposeBag()
+        var count = 1
+        
+        let sequenceThatErrors = Observable<String>.create { observer in
+            observer.onNext("a")
+            observer.onNext("b")
+            
+            //让第一个订阅时发生错误
+            if count == 1 {
+                observer.onError(MyError.A)
+                print("Error encountered")
+                count += 1
+            }
+            
+            observer.onNext("c")
+            observer.onNext("d")
+            observer.onCompleted()
+            
+            return Disposables.create()
+        }
+        
+        sequenceThatErrors
+            .retry(2)  //重试2次（参数为空则只重试一次）
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+//    打印所有的订阅, 事件和disposals
+    func debugTest() {
+        let disposeBag = DisposeBag()
+        
+        Observable.of("2", "3")
+            .startWith("1")
+            .debug()
+            .subscribe(onNext: { print($0) })
+            .disposed(by: disposeBag)
+    }
+    
+    // MARK:Function
+    
+    ///延迟执行
+    /// - Parameters:
+    ///   - delay: 延迟时间（秒）
+    ///   - closure: 延迟执行的闭包
+    public func delay(_ delay: Double, closure: @escaping () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            closure()
+        }
+    }
+    
+    // MARK:ENUM
+    enum MyError: Error {
+        case A
+        case B
+    }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
