@@ -1,6 +1,17 @@
 # iOSPrinciple_RxSwift
 Principle RxSwift
 
+*更新2018.06.12*
+常用的差不多就整理到这里了，送出 RxSwift 体验：
+
+* Composable 可组合，在设计模式中有一种模式叫做组合模式，你可以方便的用不同的组合实现不同的类
+* Reusable 代码可重用，原因很简单，对应RxSwift，就是一堆Obserable
+* Declarative 响应式的，因为状态不可变，只有数据变化
+* Understandable and concise 简洁，容易理解。
+* Stable 稳定，因为RxSwift写出的代码，单元测试时分方便
+* Less stateful “无”状态性，因为对于响应式编程，你的应用程序就是一堆数据流
+* Without leaks 没有泄漏，因为资源管理非常简单
+
 
 > RxSwif 是 ReactiveX (http://reactivex.io/) 的 Swift 版本，也就是一个函数式响应编程的框架。
 
